@@ -1,0 +1,8 @@
+const express=require('express');const cors=require('cors');const path=require('path');const app=express();app.use(cors());app.use(express.json());app.use(express.static(path.join(__dirname,'../frontend')));
+let books=[{id:1,title:'Java Programming',author:'James Gosling',price:500,stock:20},{id:2,title:'Database Systems',author:'Abraham Silberschatz',price:650,stock:15},{id:3,title:'Python Basics',author:'Mark Lutz',price:450,stock:10}];
+let customers=[{id:1,name:'Ravi',phone:'9876543210',email:'ravi@gmail.com'}];let orders=[];let nextBook=4,nextCustomer=2,nextOrder=1;
+app.get('/api/books',(q,s)=>s.json(books));app.post('/api/books',(q,s)=>{let x={id:nextBook++,...q.body};books.push(x);s.json(x)});
+app.get('/api/customers',(q,s)=>s.json(customers));app.post('/api/customers',(q,s)=>{let x={id:nextCustomer++,...q.body};customers.push(x);s.json(x)});
+app.get('/api/orders',(q,s)=>s.json(orders));app.post('/api/orders',(q,s)=>{let {customerId,bookId,quantity}=q.body;let b=books.find(x=>x.id===bookId),c=customers.find(x=>x.id===customerId);if(!b||b.stock<quantity)return s.status(400).json({error:'Not enough stock'});b.stock-=quantity;let x={id:nextOrder++,customer:c.name,book:b.title,quantity,total:b.price*quantity};orders.push(x);s.json(x)});
+app.get('/api/reports',(q,s)=>s.json({totalOrders:orders.length,totalSales:orders.reduce((a,x)=>a+x.total,0),booksSold:orders.reduce((a,x)=>a+x.quantity,0)}));
+app.listen(3000,()=>console.log('Server running at http://localhost:3000'));

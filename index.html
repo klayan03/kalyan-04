@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bookstore Management System</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><h1>Bookstore Management System</h1><p>Inventory • Orders • Customers • Reports</p></header>
+<nav>
+<button onclick="showSection('dashboard')">Dashboard</button>
+<button onclick="showSection('books')">Books</button>
+<button onclick="showSection('customers')">Customers</button>
+<button onclick="showSection('orders')">Orders</button>
+<button onclick="showSection('reports')">Reports</button>
+</nav>
+<main>
+<section id="dashboard" class="section active">
+<h2>Dashboard</h2><div class="cards">
+<div class="card"><b id="bookCount">0</b><span>Books</span></div>
+<div class="card"><b id="customerCount">0</b><span>Customers</span></div>
+<div class="card"><b id="orderCount">0</b><span>Orders</span></div>
+<div class="card"><b id="salesTotal">₹0</b><span>Total Sales</span></div>
+</div></section>
+
+<section id="books" class="section">
+<h2>Inventory Management</h2>
+<form id="bookForm"><input id="title" placeholder="Book title" required><input id="author" placeholder="Author" required><input id="price" type="number" placeholder="Price" required><input id="stock" type="number" placeholder="Stock" required><button>Add Book</button></form>
+<table><thead><tr><th>ID</th><th>Title</th><th>Author</th><th>Price</th><th>Stock</th></tr></thead><tbody id="booksTable"></tbody></table>
+</section>
+
+<section id="customers" class="section">
+<h2>Customer Management</h2>
+<form id="customerForm"><input id="customerName" placeholder="Customer name" required><input id="phone" placeholder="Phone" required><input id="email" type="email" placeholder="Email" required><button>Add Customer</button></form>
+<table><thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Email</th></tr></thead><tbody id="customersTable"></tbody></table>
+</section>
+
+<section id="orders" class="section">
+<h2>Order Processing</h2>
+<form id="orderForm"><select id="customerSelect" required></select><select id="bookSelect" required></select><input id="quantity" type="number" min="1" value="1" required><button>Place Order</button></form>
+<table><thead><tr><th>Order ID</th><th>Customer</th><th>Book</th><th>Quantity</th><th>Total</th></tr></thead><tbody id="ordersTable"></tbody></table>
+</section>
+
+<section id="reports" class="section">
+<h2>Sales Reports</h2><div class="report"><p>Total orders: <b id="reportOrders">0</b></p><p>Total revenue: <b id="reportSales">₹0</b></p><p>Books sold: <b id="reportBooks">0</b></p></div>
+</section>
+</main>
+<script src="script.js"></script>
+</body>
+</html>
+const API='/api';
+function showSection(id){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');loadData();}
+async function loadData(){const [b,c,o,r]=await Promise.all([fetch(API+'/books').then(x=>x.json()),fetch(API+'/customers').then(x=>x.json()),fetch(API+'/orders').then(x=>x.json()),fetch(API+'/reports').then(x=>x.json())]);
+bookCount.textContent=b.length;customerCount.textContent=c.length;orderCount.textContent=o.length;salesTotal.textContent='₹'+r.totalSales;
+booksTable.innerHTML=b.map(x=>`<tr><td>${x.id}</td><td>${x.title}</td><td>${x.author}</td><td>₹${x.price}</td><td>${x.stock}</td></tr>`).join('');
+customersTable.innerHTML=c.map(x=>`<tr><td>${x.id}</td><td>${x.name}</td><td>${x.phone}</td><td>${x.email}</td></tr>`).join('');
+customerSelect.innerHTML=c.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
+bookSelect.innerHTML=b.filter(x=>x.stock>0).map(x=>`<option value="${x.id}">${x.title} - ₹${x.price} (${x.stock} left)</option>`).join('');
+ordersTable.innerHTML=o.map(x=>`<tr><td>${x.id}</td><td>${x.customer}</td><td>${x.book}</td><td>${x.quantity}</td><td>₹${x.total}</td></tr>`).join('');
+reportOrders.textContent=r.totalOrders;reportSales.textContent='₹'+r.totalSales;reportBooks.textContent=r.booksSold;}
+bookForm.onsubmit=async e=>{e.preventDefault();await fetch(API+'/books',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:title.value,author:author.value,price:+price.value,stock:+stock.value})});e.target.reset();loadData()};
+customerForm.onsubmit=async e=>{e.preventDefault();await fetch(API+'/customers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:customerName.value,phone:phone.value,email:email.value})});e.target.reset();loadData()};
+orderForm.onsubmit=async e=>{e.preventDefault();const res=await fetch(API+'/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerId:+customerSelect.value,bookId:+bookSelect.value,quantity:+quantity.value})});const data=await res.json();if(!res.ok)alert(data.error);loadData()};
+loadData();
+*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#f4f6f9;color:#222}header{background:#243b53;color:white;text-align:center;padding:25px}nav{display:flex;gap:10px;justify-content:center;padding:15px;background:white;box-shadow:0 2px 5px #ccc}button{background:#2563eb;color:white;border:0;padding:10px 16px;border-radius:5px;cursor:pointer}main{max-width:1100px;margin:25px auto;padding:0 15px}.section{display:none}.section.active{display:block}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}.card,.report{background:white;padding:25px;border-radius:10px;box-shadow:0 2px 8px #ddd}.card b{display:block;font-size:28px;color:#2563eb}.card span{color:#555}form{display:flex;gap:10px;flex-wrap:wrap;background:white;padding:15px;margin:15px 0;border-radius:8px}input,select{padding:10px;border:1px solid #ccc;border-radius:5px;flex:1;min-width:150px}table{width:100%;border-collapse:collapse;background:white}th,td{padding:12px;border:1px solid #ddd;text-align:left}th{background:#e8eef7}@media(max-width:700px){.cards{grid-template-columns:repeat(2,1fr)}nav{flex-wrap:wrap}}
+{"name":"bookstore-management-system","version":"1.0.0","main":"server.js","scripts":{"start":"node server.js"},"dependencies":{"express":"^4.21.2","cors":"^2.8.5"}}
+const express=require('express');const cors=require('cors');const path=require('path');const app=express();app.use(cors());app.use(express.json());app.use(express.static(path.join(__dirname,'../frontend')));
+let books=[{id:1,title:'Java Programming',author:'James Gosling',price:500,stock:20},{id:2,title:'Database Systems',author:'Abraham Silberschatz',price:650,stock:15},{id:3,title:'Python Basics',author:'Mark Lutz',price:450,stock:10}];
+let customers=[{id:1,name:'Ravi',phone:'9876543210',email:'ravi@gmail.com'}];let orders=[];let nextBook=4,nextCustomer=2,nextOrder=1;
+app.get('/api/books',(q,s)=>s.json(books));app.post('/api/books',(q,s)=>{let x={id:nextBook++,...q.body};books.push(x);s.json(x)});
+app.get('/api/customers',(q,s)=>s.json(customers));app.post('/api/customers',(q,s)=>{let x={id:nextCustomer++,...q.body};customers.push(x);s.json(x)});
+app.get('/api/orders',(q,s)=>s.json(orders));app.post('/api/orders',(q,s)=>{let {customerId,bookId,quantity}=q.body;let b=books.find(x=>x.id===bookId),c=customers.find(x=>x.id===customerId);if(!b||b.stock<quantity)return s.status(400).json({error:'Not enough stock'});b.stock-=quantity;let x={id:nextOrder++,customer:c.name,book:b.title,quantity,total:b.price*quantity};orders.push(x);s.json(x)});
+app.get('/api/reports',(q,s)=>s.json({totalOrders:orders.length,totalSales:orders.reduce((a,x)=>a+x.total,0),booksSold:orders.reduce((a,x)=>a+x.quantity,0)}));
+CREATE DATABASE bookstore_db;
+USE bookstore_db;
+CREATE TABLE books(book_id INT AUTO_INCREMENT PRIMARY KEY,title VARCHAR(100) NOT NULL,author VARCHAR(100),price DECIMAL(10,2),stock INT DEFAULT 0);
+CREATE TABLE customers(customer_id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(100) NOT NULL,phone VARCHAR(15),email VARCHAR(100));
+CREATE TABLE orders(order_id INT AUTO_INCREMENT PRIMARY KEY,customer_id INT,total_amount DECIMAL(10,2),status VARCHAR(30),order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
